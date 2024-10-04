@@ -1,6 +1,6 @@
 # TwitchCut
 
-Ce programme vous permet de télécharger des clips Twitch et de les convertir au format TikTok. Il est conçu pour fonctionner sur un système Ubuntu et utilise PyQt5 pour l'interface graphique.
+Ce projet vous permet de télécharger des clips Twitch et de les convertir au format TikTok. Bien que l'upload automatique sur TikTok ne soit pas pris en charge, vous pouvez facilement gérer les clips téléchargés et convertis.
 
 ## Prérequis
 
@@ -30,8 +30,8 @@ Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur 
 
 1. **Cloner le dépôt** : Téléchargez le code source du programme.
    ```bash
-   git clone https://github.com/votre-utilisateur/TwitchCut.git
-   cd TwitchCut
+   git clone https://github.com/votre-utilisateur/twitch-to-tiktok.git
+   cd twitch-to-tiktok
    ```
 
 2. **Configurer les Identifiants Twitch** : Vous devez obtenir un `client_id` et un `client_secret` de l'API Twitch. Suivez ces étapes :
@@ -55,9 +55,9 @@ Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur 
    source env/bin/activate
    ```
 
-2. **Lancer l'Application** : Exécutez le programme avec la commande suivante :
+2. **Lancer l'Application** : Exécutez le programme avec la commande suivante depuis la racine du projet :
    ```bash
-   python src/gui.py
+   python main.py
    ```
 
 ## Utilisation
