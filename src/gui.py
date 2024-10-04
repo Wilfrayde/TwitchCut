@@ -1,27 +1,111 @@
 import sys
 import os
+import subprocess
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel,
     QPushButton, QComboBox, QFileDialog, QMessageBox,
     QListWidget, QListWidgetItem, QProgressBar
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 # Importer les modules nécessaires
 from twitch_api import TwitchAPI
 from downloader import download_clip, sanitize_filename
+
+class ConversionThread(QThread):
+    progress = pyqtSignal(int)
+    finished = pyqtSignal()
+
+    def __init__(self, input_file, output_file, index):
+        super().__init__()
+        self.input_file = input_file
+        self.output_file = output_file
+        self.index = index
+
+    def run(self):
+        # Commande FFmpeg pour convertir la vidéo au format TikTok
+        command = [
+            'ffmpeg',
+            '-i', self.input_file,
+            '-vf', 'scale=1080:1920,setsar=1:1',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-f', 'mp4',
+            self.output_file
+        ]
+        
+        # Exécuter la commande
+        try:
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f'Error converting {self.input_file}: {e}')
+        
+        self.progress.emit(self.index)
+        self.finished.emit()
+
+class FetchClipsThread(QThread):
+    clips_fetched = pyqtSignal(list)
+    error_occurred = pyqtSignal(str)
+
+    def __init__(self, twitch_api, period_value):
+        super().__init__()
+        self.twitch_api = twitch_api
+        self.period_value = period_value
+
+    def run(self):
+        try:
+            broadcaster_ids = self.twitch_api.get_live_streamers(language='fr', first=10)
+            clips = self.twitch_api.get_top_clips(broadcaster_ids, period=self.period_value, first=10)
+            self.clips_fetched.emit(clips)
+        except Exception as e:
+            self.error_occurred.emit(str(e))
 
 class TwitchToTikTokGUI(QWidget):
     def __init__(self):
         super().__init__()
         self.init_ui()
         self.clips = []
-        self.save_directory = ''
+        self.threads = []
+        # Utilisez le répertoire personnel pour éviter les problèmes de permissions
+        self.save_directory = os.path.expanduser('~/Bureau/TwitchCut/clips')
+        self.tiktok_directory = os.path.expanduser('~/Bureau/TwitchCut/clips_tiktok')
+        os.makedirs(self.tiktok_directory, exist_ok=True)
         # Initialiser l'API Twitch avec vos identifiants
         self.twitch_api = TwitchAPI(
             client_id=os.getenv('TWITCH_CLIENT_ID'),
             client_secret=os.getenv('TWITCH_CLIENT_SECRET')
         )
+
+    def convert_to_tiktok_format(self, input_file, output_file, index):
+        thread = ConversionThread(input_file, output_file, index)
+        thread.progress.connect(self.update_progress)
+        thread.finished.connect(self.check_conversion_completion)
+        self.threads.append(thread)
+        thread.start()
+
+    def update_progress(self, index):
+        self.progress_bar.setValue(index)
+
+    def check_conversion_completion(self):
+        if all(not thread.isRunning() for thread in self.threads):
+            self.status_label.setText('Conversion terminée.')
+            QMessageBox.information(self, 'Conversion terminée', 'Tous les clips ont été convertis avec succès.')
+
+    def process_clips(self):
+        self.status_label.setText('Conversion des clips en cours...')
+        self.progress_bar.setMaximum(len(os.listdir(self.save_directory)))
+        self.progress_bar.setValue(0)
+
+        # Parcourir tous les fichiers dans le répertoire des clips
+        for i, clip in enumerate(os.listdir(self.save_directory), 1):
+            input_file = os.path.join(self.save_directory, clip)
+            output_file = os.path.join(self.tiktok_directory, f'tiktok_{clip}')
+            
+            # Convertir chaque clip dans un thread séparé
+            self.convert_to_tiktok_format(input_file, output_file, i)
 
     def init_ui(self):
         self.setWindowTitle('Twitch to TikTok Downloader')
@@ -63,6 +147,10 @@ class TwitchToTikTokGUI(QWidget):
         self.progress_bar = QProgressBar()
         layout.addWidget(self.progress_bar)
 
+        # Label d'état
+        self.status_label = QLabel('')
+        layout.addWidget(self.status_label)
+
         # Définir le layout principal
         self.setLayout(layout)
 
@@ -76,16 +164,27 @@ class TwitchToTikTokGUI(QWidget):
         }
         period = self.combo_period.currentText()
         period_value = period_mapping.get(period, 'day')
-        print(f'Récupération des clips pour la période: {period_value}')
+        self.status_label.setText(f'Récupération des clips pour la période: {period_value}')
+        self.btn_fetch.setEnabled(False)
+        self.btn_download.setEnabled(False)
 
-        try:
-            # Récupérer les streamers en direct
-            broadcaster_ids = self.twitch_api.get_live_streamers(language='fr', first=10)
-            # Récupérer les clips pour ces streamers
-            self.clips = self.twitch_api.get_top_clips(broadcaster_ids, period=period_value, first=10)
-        except Exception as e:
-            QMessageBox.critical(self, 'Erreur', f'Une erreur est survenue lors de la récupération des clips:\n{e}')
-            return
+        # Simuler la progression
+        self.progress_bar.setMaximum(0)
+        self.progress_bar.setValue(0)
+
+        # Créer et démarrer le thread pour récupérer les clips
+        self.fetch_thread = FetchClipsThread(self.twitch_api, period_value)
+        self.fetch_thread.clips_fetched.connect(self.on_clips_fetched)
+        self.fetch_thread.error_occurred.connect(self.on_fetch_error)
+        self.fetch_thread.start()
+
+    def on_clips_fetched(self, clips):
+        self.clips = clips
+        self.progress_bar.setMaximum(1)
+        self.progress_bar.setValue(1)
+        self.btn_fetch.setEnabled(True)
+        self.btn_download.setEnabled(True)
+        self.status_label.setText('Clips récupérés avec succès.')
 
         # Mise à jour de la liste des clips
         self.clips_list.clear()
@@ -95,7 +194,12 @@ class TwitchToTikTokGUI(QWidget):
             item.setCheckState(Qt.Unchecked)
             self.clips_list.addItem(item)
 
-        self.btn_download.setEnabled(True)
+    def on_fetch_error(self, error_message):
+        self.progress_bar.setMaximum(1)
+        self.progress_bar.setValue(1)
+        self.btn_fetch.setEnabled(True)
+        QMessageBox.critical(self, 'Erreur', f'Une erreur est survenue lors de la récupération des clips:\n{error_message}')
+        self.status_label.setText('Erreur lors de la récupération des clips.')
 
     def select_save_directory(self):
         # Fonction pour sélectionner le répertoire de sauvegarde
@@ -108,9 +212,8 @@ class TwitchToTikTokGUI(QWidget):
             options=options
         )
         if directory:
-            print(f'Dossier de sauvegarde sélectionné: {directory}')
-            # Enregistrer le dossier sélectionné pour les téléchargements
             self.save_directory = directory
+            self.status_label.setText(f'Dossier de sauvegarde sélectionné: {directory}')
 
     def download_clips(self):
         # Vérifier si le dossier de sauvegarde a été sélectionné
@@ -129,7 +232,7 @@ class TwitchToTikTokGUI(QWidget):
             QMessageBox.warning(self, 'Aucun clip sélectionné', 'Veuillez sélectionner au moins un clip à télécharger.')
             return
 
-        print('Téléchargement des clips...')
+        self.status_label.setText('Téléchargement des clips en cours...')
         self.progress_bar.setMaximum(len(selected_clips))
         self.progress_bar.setValue(0)
 
@@ -143,6 +246,10 @@ class TwitchToTikTokGUI(QWidget):
                 QMessageBox.critical(self, 'Erreur', f'Erreur lors du téléchargement de {clip["title"]}:\n{e}')
 
         QMessageBox.information(self, 'Téléchargement terminé', 'Les clips ont été téléchargés avec succès.')
+        self.status_label.setText('Téléchargement terminé.')
+
+        # Convertir les clips téléchargés au format TikTok
+        self.process_clips()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

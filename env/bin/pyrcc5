@@ -1,4 +1,4 @@
-#!/home/dev/Bureau/BestOfTwitch/env/bin/python
+#!/home/dev/Bureau/TwitchCut/env/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
