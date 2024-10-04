@@ -48,8 +48,8 @@ Ce projet vous permet de télécharger des clips Twitch et de les convertir au f
 
 1. **Cloner le dépôt** : Téléchargez le code source du programme.
    ```bash
-   git clone https://github.com/votre-utilisateur/twitch-to-tiktok.git
-   cd twitch-to-tiktok
+   git clone https://github.com/Wilfrayde/TwitchCut.git
+   cd TwitchCut
    ```
 
 2. **Configurer les Identifiants Twitch** : Vous devez obtenir un `client_id` et un `client_secret` de l'API Twitch. Suivez ces étapes :
