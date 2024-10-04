@@ -4,7 +4,7 @@ Ce projet vous permet de télécharger des clips Twitch et de les convertir au f
 
 ## Prérequis
 
-Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur votre système :
+### Pour Linux
 
 1. **Python 3.8+** : Assurez-vous que Python est installé. Vous pouvez vérifier cela en exécutant `python3 --version` dans votre terminal.
 
@@ -26,6 +26,24 @@ Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur 
    pip install -r requirements.txt
    ```
 
+### Pour Windows
+
+1. **Python 3.8+** : Téléchargez et installez Python depuis [python.org](https://www.python.org/downloads/). Assurez-vous de cocher l'option "Add Python to PATH" lors de l'installation.
+
+2. **pip** : Est généralement inclus avec Python. Vérifiez son installation avec `pip --version` dans l'invite de commande.
+
+3. **FFmpeg** : Téléchargez FFmpeg depuis [ffmpeg.org](https://ffmpeg.org/download.html). Extrayez les fichiers et ajoutez le chemin du dossier `bin` de FFmpeg à votre variable d'environnement PATH.
+
+4. **PyQt5** : Installez-le avec :
+   ```cmd
+   pip install PyQt5
+   ```
+
+5. **Autres dépendances Python** : Installez les autres dépendances nécessaires avec le fichier `requirements.txt` :
+   ```cmd
+   pip install -r requirements.txt
+   ```
+
 ## Configuration
 
 1. **Cloner le dépôt** : Téléchargez le code source du programme.
@@ -38,27 +56,42 @@ Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur 
    - Créez une application sur le [Twitch Developer Portal](https://dev.twitch.tv/console/apps).
    - Notez votre `client_id` et `client_secret`.
 
-3. **Définir les Variables d'Environnement** : Ajoutez vos identifiants Twitch à votre environnement. Vous pouvez le faire en ajoutant les lignes suivantes à votre fichier `~/.bashrc` :
-   ```bash
-   export TWITCH_CLIENT_ID='votre_client_id'
-   export TWITCH_CLIENT_SECRET='votre_client_secret'
-   ```
-   Puis, rechargez votre fichier de configuration :
-   ```bash
-   source ~/.bashrc
-   ```
+3. **Définir les Variables d'Environnement** :
+
+   - **Pour Linux** : Ajoutez vos identifiants Twitch à votre environnement en modifiant `~/.bashrc` :
+     ```bash
+     export TWITCH_CLIENT_ID='votre_client_id'
+     export TWITCH_CLIENT_SECRET='votre_client_secret'
+     source ~/.bashrc
+     ```
+
+   - **Pour Windows** : Ajoutez vos identifiants Twitch aux variables d'environnement via le Panneau de configuration > Système > Paramètres système avancés > Variables d'environnement.
 
 ## Exécution du Programme
 
-1. **Activer l'Environnement Virtuel** : Si vous utilisez un environnement virtuel, activez-le :
-   ```bash
-   source env/bin/activate
-   ```
+1. **Activer l'Environnement Virtuel** (optionnel mais recommandé) :
+
+   - **Pour Linux** :
+     ```bash
+     source env/bin/activate
+     ```
+
+   - **Pour Windows** :
+     ```cmd
+     .\env\Scripts\activate
+     ```
 
 2. **Lancer l'Application** : Exécutez le programme avec la commande suivante depuis la racine du projet :
-   ```bash
-   python main.py
-   ```
+
+   - **Pour Linux** :
+     ```bash
+     python main.py
+     ```
+
+   - **Pour Windows** :
+     ```cmd
+     python main.py
+     ```
 
 ## Utilisation
 
@@ -81,3 +114,7 @@ Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur 
 ## Contributions
 
 Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou à soumettre une pull request.
+
+## Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
