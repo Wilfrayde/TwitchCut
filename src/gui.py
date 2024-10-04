@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel,
     QPushButton, QComboBox, QFileDialog, QMessageBox,
@@ -18,8 +19,8 @@ class TwitchToTikTokGUI(QWidget):
         self.save_directory = ''
         # Initialiser l'API Twitch avec vos identifiants
         self.twitch_api = TwitchAPI(
-            client_id='08elmt8ivid4gk8tnxy7t2v01q5pcc',
-            client_secret='hjyse4uxm8dnovfjx6xfabbbxi9s1x'
+            client_id=os.getenv('TWITCH_CLIENT_ID'),
+            client_secret=os.getenv('TWITCH_CLIENT_SECRET')
         )
 
     def init_ui(self):
